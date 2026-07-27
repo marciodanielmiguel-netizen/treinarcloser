@@ -90,6 +90,30 @@ Cada pergunta e cada simulação encerrada gera uma linha em `backend/logs/usage
 Edite `backend/knowledge/base_conhecimento_v1.md` — é injetado inteiro no prompt a cada pergunta,
 tanto no chat quanto no roleplay. Basta salvar, não precisa reiniciar o backend.
 
+## Produção
+
+Rodando em **`https://treino.zyllos.online`** — VPS Hostinger (Ubuntu 24.04), IP `179.198.99.203`.
+
+- Código em `/var/www/treinarcloser`, processo gerenciado pelo PM2 (`pm2 status`, `pm2 logs
+  mauricio-digital`), configurado pra subir sozinho no boot via systemd (`pm2-root.service`).
+- Nginx faz proxy reverso de `treino.zyllos.online` → `localhost:3001`
+  (`/etc/nginx/sites-available/zyllos.online`). HTTPS via Let's Encrypt/certbot, renovação
+  automática (expira 2026-10-25, cheque `certbot certificates` se precisar confirmar).
+- **Atenção ao DNS:** o domínio `zyllos.online` (raiz e `www`) já serve outros sites reais no
+  hosting compartilhado da Hostinger — só o subdomínio `treino` aponta pro VPS. Nunca reaponte o
+  registro `@`/`www`.
+- Acesso SSH: `ssh -i ~/.ssh/zyllos_vps root@179.198.99.203` (chave só existe localmente em
+  `C:\Users\Dan\.ssh\zyllos_vps`).
+
+**Pra atualizar depois de um `git push`:**
+```bash
+ssh -i ~/.ssh/zyllos_vps root@179.198.99.203
+cd /var/www/treinarcloser && git pull
+cd frontend && npm install && npm run build
+cd ../backend && npm install
+pm2 restart mauricio-digital
+```
+
 ## Próximos ajustes sugeridos
 
 - Validar com o Maurício a definição real do framework A.S.T.R.O. e refinar o prompt de feedback.
