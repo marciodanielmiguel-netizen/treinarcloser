@@ -25,6 +25,14 @@ Preencha o `.env`:
   no painel — a distinção é como a voz entrou na conta, não onde ela aparece.
 - `VOYAGE_API_KEY` — reservada pro pipeline de RAG (busca vetorial nas reuniões do Drive), ainda
   não usada no código.
+- `COLABORADORES` — senha individual por colaborador, formato `senha:Nome,senha2:Nome2`. A
+  identidade usada nos logs e no relatório por email vem da senha usada pra entrar, não de texto
+  livre. Ex: `icaro123:Ícaro,carol123:Carol`.
+- `RESEND_API_KEY` e `REPORT_EMAIL_TO` — opcionais. Se preenchidos, toda vez que uma simulação é
+  encerrada ("Encerrar e avaliar"), um relatório por email é enviado pra `REPORT_EMAIL_TO` com o
+  nome do colaborador, perfil do lead configurado, todos os momentos de modo coach (pontos de
+  dificuldade) e o feedback A.S.T.R.O. completo. Sem chave, o envio é pulado silenciosamente — não
+  quebra o app.
 
 Sobe em `http://localhost:3001`.
 
@@ -65,15 +73,17 @@ Sobe em `http://localhost:5173` (proxy `/api` já aponta pro backend na porta 30
   > fonte. O feedback avisa isso e aplica uma estrutura razoável de vendas consultivas. Vale
   > validar/ajustar o prompt em `backend/server.js` (`SYSTEM_PROMPT_FEEDBACK`) com o Maurício.
 
-## Identificação do closer (sem login)
+## Identificação do colaborador (senha por pessoa, sem cadastro)
 
-Ao abrir o app, pede só o nome (guardado no navegador via `localStorage`, sem senha/autenticação).
-Serve pra registrar o log de uso.
+Cada colaborador tem sua própria senha (definida em `COLABORADORES` no `.env`). Ao entrar, o
+backend devolve o nome atrelado àquela senha — não tem tela de "digite seu nome", a identidade
+vem da senha usada. Isso significa que ela não pode ser forjada pelo navegador: qualquer log ou
+relatório gerado reflete exatamente qual senha foi usada pra entrar.
 
 ## Log de uso
 
 Cada pergunta e cada simulação encerrada gera uma linha em `backend/logs/usage.jsonl`
-(closer, timestamp, tipo, resumo). Arquivo local, não sobe pro git (`.gitignore`).
+(colaborador, timestamp, tipo, resumo). Arquivo local, não sobe pro git (`.gitignore`).
 
 ## Base de conhecimento
 

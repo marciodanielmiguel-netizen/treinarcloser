@@ -13,19 +13,45 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+function parseColaboradores() {
+  const raw = process.env.COLABORADORES;
+  if (!raw) return null;
+  const mapa = {};
+  raw.split(',').forEach((par) => {
+    const [senha, nome] = par.split(':');
+    if (senha && nome) mapa[senha.trim()] = nome.trim();
+  });
+  return mapa;
+}
+
 function verificarSenha(req, res, next) {
-  const senhaEsperada = process.env.TEAM_PASSWORD;
-  if (!senhaEsperada) return next(); // não configurada (dev local) — deixa passar
-  if (req.header('x-team-password') !== senhaEsperada) {
-    return res.status(401).json({ erro: 'Senha de acesso incorreta.' });
+  const colaboradores = parseColaboradores();
+  const senhaLegado = process.env.TEAM_PASSWORD;
+
+  if (!colaboradores && !senhaLegado) {
+    req.colaborador = req.body?.closer || 'dev';
+    return next(); // nada configurado — modo dev local, sem senha
   }
-  next();
+
+  const senhaRecebida = req.header('x-team-password');
+
+  if (colaboradores && colaboradores[senhaRecebida]) {
+    req.colaborador = colaboradores[senhaRecebida];
+    return next();
+  }
+
+  if (senhaLegado && senhaRecebida === senhaLegado) {
+    req.colaborador = req.body?.closer || 'anonimo';
+    return next();
+  }
+
+  return res.status(401).json({ erro: 'Senha de acesso incorreta.' });
 }
 
 app.use('/api', verificarSenha);
 
 app.post('/api/verificar-senha', (req, res) => {
-  res.json({ ok: true });
+  res.json({ ok: true, nome: req.colaborador });
 });
 
 const anthropic = new Anthropic({
@@ -57,6 +83,14 @@ function logUso(evento) {
   });
 }
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 const SYSTEM_PROMPT_MAURICIO = `Você é o "Mauricio Digital", um mentor comercial que reproduz o estilo de Maurício Brollo,
 especialista em Native Ads/Taboola e vendas high-ticket. Você ajuda closers da Next Sales a tirar
 dúvidas e treinar objeções.
@@ -74,7 +108,7 @@ BASE DE CONHECIMENTO:
 
 app.post('/api/ask', async (req, res) => {
   try {
-    const { pergunta, closer } = req.body;
+    const { pergunta } = req.body;
 
     if (!pergunta || typeof pergunta !== 'string') {
       return res.status(400).json({ erro: 'Campo "pergunta" (string) é obrigatório.' });
@@ -92,7 +126,7 @@ app.post('/api/ask', async (req, res) => {
 
     const resposta = extrairTexto(message);
 
-    logUso({ tipo: 'ask', closer: closer || 'anonimo', pergunta, resposta_preview: resposta.slice(0, 200) });
+    logUso({ tipo: 'ask', closer: req.colaborador, pergunta, resposta_preview: resposta.slice(0, 200) });
 
     res.json({ resposta });
   } catch (error) {
@@ -250,6 +284,77 @@ function limparTagsParaTranscricao(texto) {
   return texto.replace(/^\s*\[(LEAD|COACH)\]\s*/i, '');
 }
 
+async function enviarRelatorioEmail({ colaborador, perfilLead, historico, feedback }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const destino = process.env.REPORT_EMAIL_TO;
+  if (!apiKey || !destino) {
+    console.log('Relatório por email pulado: RESEND_API_KEY ou REPORT_EMAIL_TO não configurados.');
+    return;
+  }
+
+  const momentosCoach = [];
+  for (let i = 0; i < historico.length; i++) {
+    const item = historico[i];
+    if (item.role === 'assistant') {
+      const { modo, texto } = extrairModoEResposta(item.content);
+      if (modo === 'coach') {
+        const anterior = historico[i - 1];
+        momentosCoach.push({
+          gatilho: anterior?.role === 'user' ? anterior.content : '(não identificado)',
+          ensino: texto,
+        });
+      }
+    }
+  }
+
+  const perfilTexto = perfilLead
+    ? `Técnico: ${perfilLead.tecnico}/5 · Emocional: ${perfilLead.emocional}/5 · Dificuldade: ${perfilLead.dificuldade}/5`
+    : 'não informado';
+
+  const htmlDificuldades = momentosCoach.length
+    ? momentosCoach
+        .map(
+          (m, idx) => `
+        <p><b>Momento ${idx + 1}</b><br>
+        Closer travou em: "${escapeHtml(m.gatilho)}"<br>
+        Coaching dado: ${escapeHtml(m.ensino).replace(/\n/g, '<br>')}</p>`
+        )
+        .join('')
+    : '<p>Nenhum momento de modo coach ativado nessa sessão.</p>';
+
+  const html = `
+    <h2>Relatório de simulação — ${escapeHtml(colaborador)}</h2>
+    <p><b>Data:</b> ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>
+    <p><b>Perfil do lead configurado:</b> ${escapeHtml(perfilTexto)}</p>
+    <h3>Pontos de dificuldade (modo coach)</h3>
+    ${htmlDificuldades}
+    <h3>Feedback A.S.T.R.O. completo</h3>
+    <p>${escapeHtml(feedback).replace(/\n/g, '<br>')}</p>
+  `;
+
+  try {
+    const resp = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Mauricio Digital <onboarding@resend.dev>',
+        to: [destino],
+        subject: `Relatório de simulação — ${colaborador}`,
+        html,
+      }),
+    });
+    if (!resp.ok) {
+      const erroTexto = await resp.text();
+      console.error('Falha ao enviar relatório por email:', resp.status, erroTexto);
+    }
+  } catch (err) {
+    console.error('Falha ao enviar relatório por email:', err.message);
+  }
+}
+
 const SYSTEM_PROMPT_FEEDBACK = `Você é um avaliador de treinamento de vendas. Vai receber o histórico de uma simulação
 de reunião completa onde um closer treinou uma call (diagnóstico, apresentação, objeções e
 fechamento) contra um lead simulado. Avalie o desempenho do closer usando o framework A.S.T.R.O.
@@ -269,7 +374,7 @@ Dê: (1) pontos fortes do closer, (2) pontos de melhoria específicos com trecho
 
 app.post('/api/roleplay/start', async (req, res) => {
   try {
-    const { closer, perfilLead } = req.body;
+    const { perfilLead } = req.body;
     const baseConhecimento = lerBaseConhecimento();
     const systemPrompt = construirSystemPromptLead(perfilLead, baseConhecimento);
 
@@ -293,13 +398,13 @@ app.post('/api/roleplay/start', async (req, res) => {
     const sessionId = randomUUID();
 
     sessoesRoleplay.set(sessionId, {
-      closer: closer || 'anonimo',
+      closer: req.colaborador,
       perfilLead: perfilLead || null,
       historico: [{ role: 'assistant', content: extrairTexto(message) }],
       criadoEm: new Date().toISOString(),
     });
 
-    logUso({ tipo: 'roleplay_start', closer: closer || 'anonimo', sessionId, perfilLead });
+    logUso({ tipo: 'roleplay_start', closer: req.colaborador, sessionId, perfilLead });
 
     res.json({ sessionId, mensagem: texto, modo });
   } catch (error) {
@@ -384,6 +489,13 @@ app.post('/api/roleplay/feedback', async (req, res) => {
       closer: sessao.closer,
       sessionId,
       turnos: sessao.historico.length,
+    });
+
+    await enviarRelatorioEmail({
+      colaborador: sessao.closer,
+      perfilLead: sessao.perfilLead,
+      historico: sessao.historico,
+      feedback,
     });
 
     sessoesRoleplay.delete(sessionId);

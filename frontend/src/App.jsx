@@ -4,14 +4,11 @@ import RoleplayBox from './components/RoleplayBox';
 import { apiFetch, obterSenha, salvarSenha } from './utils/api';
 
 function App() {
-  const [senhaOk, setSenhaOk] = useState(false);
+  const [closer, setCloser] = useState(null);
   const [verificandoSenha, setVerificandoSenha] = useState(true);
   const [senhaDigitada, setSenhaDigitada] = useState('');
   const [erroSenha, setErroSenha] = useState(null);
   const [enviandoSenha, setEnviandoSenha] = useState(false);
-
-  const [closer, setCloser] = useState('');
-  const [nomeConfirmado, setNomeConfirmado] = useState(false);
   const [modo, setModo] = useState('duvida'); // 'duvida' | 'treino'
 
   useEffect(() => {
@@ -22,22 +19,15 @@ function App() {
       }
       try {
         const resp = await apiFetch('/api/verificar-senha', { method: 'POST' });
-        setSenhaOk(resp.ok);
-      } catch {
-        setSenhaOk(false);
+        if (resp.ok) {
+          const data = await resp.json();
+          setCloser(data.nome);
+        }
       } finally {
         setVerificandoSenha(false);
       }
     }
     verificar();
-  }, []);
-
-  useEffect(() => {
-    const salvo = localStorage.getItem('mauricio-digital-closer');
-    if (salvo) {
-      setCloser(salvo);
-      setNomeConfirmado(true);
-    }
   }, []);
 
   async function confirmarSenha(e) {
@@ -48,11 +38,9 @@ function App() {
 
     try {
       const resp = await apiFetch('/api/verificar-senha', { method: 'POST' });
-      if (!resp.ok) {
-        const data = await resp.json().catch(() => ({}));
-        throw new Error(data.erro || 'Senha incorreta.');
-      }
-      setSenhaOk(true);
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data.erro || 'Senha incorreta.');
+      setCloser(data.nome);
     } catch (err) {
       setErroSenha(err.message);
     } finally {
@@ -60,23 +48,15 @@ function App() {
     }
   }
 
-  function confirmarNome(e) {
-    e.preventDefault();
-    const nome = closer.trim();
-    if (!nome) return;
-    localStorage.setItem('mauricio-digital-closer', nome);
-    setNomeConfirmado(true);
-  }
-
   if (verificandoSenha) {
     return null;
   }
 
-  if (!senhaOk) {
+  if (!closer) {
     return (
       <div className="flex h-screen w-full max-w-md mx-auto flex-col items-center justify-center gap-4 px-6 text-center">
         <h1 className="text-lg font-semibold text-gray-900">Mauricio Digital</h1>
-        <p className="text-sm text-gray-500">Senha de acesso do time</p>
+        <p className="text-sm text-gray-500">Senha de acesso</p>
         <form onSubmit={confirmarSenha} className="w-full flex gap-2">
           <input
             type="password"
@@ -95,32 +75,6 @@ function App() {
           </button>
         </form>
         {erroSenha && <p className="text-sm text-red-600">{erroSenha}</p>}
-      </div>
-    );
-  }
-
-  if (!nomeConfirmado) {
-    return (
-      <div className="flex h-screen w-full max-w-md mx-auto flex-col items-center justify-center gap-4 px-6 text-center">
-        <h1 className="text-lg font-semibold text-gray-900">Mauricio Digital</h1>
-        <p className="text-sm text-gray-500">Qual seu nome? (só pra identificar seu treino)</p>
-        <form onSubmit={confirmarNome} className="w-full flex gap-2">
-          <input
-            type="text"
-            value={closer}
-            onChange={(e) => setCloser(e.target.value)}
-            placeholder="Seu nome"
-            className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm outline-none focus:border-purple-500"
-            autoFocus
-          />
-          <button
-            type="submit"
-            disabled={!closer.trim()}
-            className="rounded-full bg-purple-600 px-5 py-2 text-sm font-medium text-white disabled:opacity-40"
-          >
-            Entrar
-          </button>
-        </form>
       </div>
     );
   }
