@@ -7,13 +7,13 @@ const CAMPOS_PERFIL = [
   { chave: 'dificuldade', titulo: 'Dificuldade de fechamento', esquerda: 'Muito fácil', direita: 'Muito difícil' },
 ];
 
-const ETAPAS = [
-  { chave: 'completo', titulo: 'Exercício completo', descricao: 'Rapport → diagnóstico → ARM-AP → dúvidas/pacto de preço → objeções e fechamento.' },
-  { chave: 'rapport_diagnostico', titulo: 'Rapport + Diagnóstico', descricao: 'Só a abertura e a extração de informação. Você fala primeiro.' },
+const ETAPAS_ATOMICAS = [
+  { chave: 'rapport_diagnostico', titulo: 'Rapport + Diagnóstico', descricao: 'Abertura e extração de informação. Você fala primeiro.' },
   { chave: 'armap', titulo: 'ARM-AP', descricao: 'Transição diagnóstico → apresentação. O lead já entra em cena, você fecha o pacto de ouvir a proposta.' },
   { chave: 'pacto_preco', titulo: 'Dúvidas + pacto de preço', descricao: 'O lead já entra em cena com uma dúvida técnica antes do pacto pré-preço.' },
   { chave: 'objecoes_fechamento', titulo: 'Objeções e fechamento', descricao: 'O lead já entra em cena levantando uma objeção real.' },
 ];
+const CHAVES_ETAPAS_ATOMICAS = ETAPAS_ATOMICAS.map((e) => e.chave);
 
 function corOrb(estado, modoFala) {
   if (estado === 'ouvindo') return 'bg-blue-500';
@@ -31,7 +31,15 @@ function textoEstado(estado, modoFala) {
 
 export default function RoleplayBox({ closer }) {
   const [perfilLead, setPerfilLead] = useState({ tecnico: 3, emocional: 3, dificuldade: 3 });
-  const [etapa, setEtapa] = useState('completo');
+  const [etapasSelecionadas, setEtapasSelecionadas] = useState(CHAVES_ETAPAS_ATOMICAS);
+
+  const exercicioCompleto = etapasSelecionadas.length === CHAVES_ETAPAS_ATOMICAS.length;
+
+  function alternarEtapa(chave) {
+    setEtapasSelecionadas((prev) =>
+      prev.includes(chave) ? prev.filter((c) => c !== chave) : [...prev, chave]
+    );
+  }
   const [sessionId, setSessionId] = useState(null);
   const [carregandoForm, setCarregandoForm] = useState(false);
   const [carregandoFeedback, setCarregandoFeedback] = useState(false);
@@ -216,7 +224,7 @@ export default function RoleplayBox({ closer }) {
       const resp = await apiFetch('/api/roleplay/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ closer, perfilLead, etapa }),
+        body: JSON.stringify({ closer, perfilLead, etapas: etapasSelecionadas }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.erro || 'Falha ao iniciar simulação.');
@@ -331,21 +339,41 @@ export default function RoleplayBox({ closer }) {
         </div>
 
         <div className="w-full text-left">
-          <label className="block text-sm font-medium text-gray-700 mb-2">O que treinar</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            O que treinar (marque quantas etapas quiser)
+          </label>
           <div className="space-y-2">
-            {ETAPAS.map((op) => (
+            <label
+              className={`flex items-start gap-2 rounded-lg border px-3 py-2 cursor-pointer ${
+                exercicioCompleto ? 'border-purple-600 bg-purple-50' : 'border-gray-200'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={exercicioCompleto}
+                onChange={() => setEtapasSelecionadas(CHAVES_ETAPAS_ATOMICAS)}
+                className="mt-1 accent-purple-600"
+              />
+              <span>
+                <span className="block text-sm font-medium text-gray-900">Exercício completo</span>
+                <span className="block text-xs text-gray-500">
+                  Rapport → diagnóstico → ARM-AP → dúvidas/pacto de preço → objeções e fechamento.
+                  Marca todas as etapas abaixo.
+                </span>
+              </span>
+            </label>
+
+            {ETAPAS_ATOMICAS.map((op) => (
               <label
                 key={op.chave}
                 className={`flex items-start gap-2 rounded-lg border px-3 py-2 cursor-pointer ${
-                  etapa === op.chave ? 'border-purple-600 bg-purple-50' : 'border-gray-200'
+                  etapasSelecionadas.includes(op.chave) ? 'border-purple-600 bg-purple-50' : 'border-gray-200'
                 }`}
               >
                 <input
-                  type="radio"
-                  name="etapa"
-                  value={op.chave}
-                  checked={etapa === op.chave}
-                  onChange={() => setEtapa(op.chave)}
+                  type="checkbox"
+                  checked={etapasSelecionadas.includes(op.chave)}
+                  onChange={() => alternarEtapa(op.chave)}
                   className="mt-1 accent-purple-600"
                 />
                 <span>
@@ -355,6 +383,9 @@ export default function RoleplayBox({ closer }) {
               </label>
             ))}
           </div>
+          {etapasSelecionadas.length === 0 && (
+            <p className="text-xs text-red-600 mt-2">Marque pelo menos uma etapa.</p>
+          )}
         </div>
 
         <div className="w-full space-y-5 text-left">
@@ -384,7 +415,7 @@ export default function RoleplayBox({ closer }) {
         <button
           type="button"
           onClick={iniciarSimulacao}
-          disabled={carregandoForm}
+          disabled={carregandoForm || etapasSelecionadas.length === 0}
           className="rounded-full bg-purple-600 px-6 py-2 text-sm font-medium text-white disabled:opacity-40"
         >
           {carregandoForm ? 'Preparando...' : 'Começar simulação'}

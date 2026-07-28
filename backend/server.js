@@ -221,58 +221,91 @@ function descreverPerfilLead(perfilLead) {
 - Dificuldade de fechamento: ${dificuldade}`;
 }
 
-const ETAPAS_SIMULACAO = {
-  completo: {
-    label: 'Exercício completo',
-    closerComeca: true,
-    escopo: null,
-  },
+const ORDEM_ETAPAS = ['rapport_diagnostico', 'armap', 'pacto_preco', 'objecoes_fechamento'];
+
+const ETAPAS_INFO = {
   rapport_diagnostico: {
     label: 'Rapport + Diagnóstico',
-    closerComeca: true,
-    escopo: `ESCOPO DESTA SIMULAÇÃO: só RAPPORT + DIAGNÓSTICO. Ignore apresentação/objeções/fechamento
-— não avance sozinho pra elas. Quando o closer já tiver coletado um diagnóstico razoável (nicho,
-tráfego atual, investimento/ROI, motivo real da busca), sinalize o fim natural dessa etapa com uma
-fala do tipo "acho que é isso, o que você acha que dá pra fazer por mim?" e pare aí — não continue
-puxando apresentação ou preço por conta própria.`,
+    instrucao: `RAPPORT + DIAGNÓSTICO: quem fala primeiro é o CLOSER — você nunca inicia a conversa nem
+entrega contexto espontâneo antes de ser perguntado. Dê só um gancho breve e vago da sua situação
+quando perguntado de forma aberta — nunca a história toda de uma vez. Siga a regra de parcimônia de
+informação à risca — o closer precisa GANHAR cada dado com pergunta boa (seção 2 da base de
+conhecimento: onde roda tráfego hoje, investimento e ROI atual, nicho, estrutura de equipe, motivo
+real da busca, histórico com mentoria). Não levante objeção de preço ainda.`,
+    aberturaEmCena: null, // closer sempre começa nesta etapa
   },
   armap: {
-    label: 'ARM-AP (transição diagnóstico → apresentação)',
-    closerComeca: false,
-    escopo: `ESCOPO DESTA SIMULAÇÃO: só ARM-AP, a transição entre diagnóstico e apresentação comercial.
-Assuma que o diagnóstico já aconteceu — invente mentalmente um cenário plausível e coerente com o
-perfil do lead abaixo (nicho, tráfego atual, investimento/ROI, motivo da busca), mas NUNCA narre esse
-cenário fora do personagem — comece já em cena. O closer vai tentar fechar o pacto de transição: algo
-como "mediante tudo que a gente conversou, faz sentido você ouvir a proposta e ponderar entrar nesse
-ecossistema?". Responda com um SIM ou NÃO claro, conforme a dificuldade configurada: dificuldade
-baixa topa com facilidade; dificuldade alta hesita e evita compromisso ("não sei, acho que não
-preciso disso agora", "não vou confirmar nada, não fecho nada em call"). Não entre em detalhe de
-preço nem objeção de fechamento — o foco é só esse micro-pacto de transição.`,
+    label: 'ARM-AP',
+    instrucao: `ARM-AP (transição diagnóstico → apresentação): quando o closer tentar fechar o pacto de
+transição — algo como "mediante tudo que a gente conversou, faz sentido você ouvir a proposta e
+ponderar entrar nesse ecossistema?" — responda com um SIM ou NÃO claro, conforme a dificuldade
+configurada: fácil topa com naturalidade; difícil hesita e evita compromisso ("não sei, acho que não
+preciso agora", "não vou confirmar nada, não fecho em call"). Sem esse pacto fechado, o closer não
+deveria avançar — se ele tentar pular direto pra preço sem fazer esse pacto, reaja com estranheza/
+resistência, como um lead real reagiria a alguém queimando etapa. Não existe fase de apresentação com
+slides nessa simulação — depois do ARM-AP vai direto pra dúvidas/pacto de preço.`,
+    aberturaEmCena:
+      'Comece a simulação já no momento do ARM-AP: assuma que o diagnóstico já aconteceu (invente ' +
+      'mentalmente um cenário plausível e coerente com o perfil do lead, sem narrar isso fora do ' +
+      'personagem) e mande a primeira fala do lead nesse ponto, esperando o closer tentar o pacto de ' +
+      'transição.',
   },
   pacto_preco: {
     label: 'Dúvidas + pacto de preço',
-    closerComeca: false,
-    escopo: `ESCOPO DESTA SIMULAÇÃO: só DÚVIDAS + PACTO DE PREÇO. Pule rapport, diagnóstico, ARM-AP e
-apresentação — assuma que já aconteceram (cenário plausível e coerente com o perfil abaixo), mas
-comece já em cena, sem narrar isso fora do personagem. O closer vai tirar dúvida técnica sua e tentar
-um pacto antes de revelar o valor (algo como "se eu tiver uma solução que cabe no seu investimento,
-faz sentido pra você?"). Abra a simulação já com uma dúvida técnica genuína e específica, coerente
-com seu nível técnico configurado. Só concorde com o pacto se a resposta do closer fizer sentido de
-verdade — não ceda por educação.`,
+    instrucao: `DÚVIDAS + PACTO DE PREÇO: reaja com uma dúvida técnica genuína, coerente com seu nível
+técnico, antes de aceitar qualquer pacto pré-preço que o closer tentar fazer (ex: "se eu tiver uma
+solução que cabe no seu investimento, faz sentido pra você?"). Só concorde se a resposta do closer
+fizer sentido de verdade — não ceda por educação.`,
+    aberturaEmCena:
+      'Comece a simulação já com uma dúvida técnica genuína e específica sua, coerente com seu nível ' +
+      'técnico — assuma que rapport, diagnóstico, ARM-AP e apresentação já aconteceram (cenário ' +
+      'plausível e coerente com o perfil do lead, sem narrar isso fora do personagem).',
   },
   objecoes_fechamento: {
     label: 'Objeções e fechamento',
-    closerComeca: false,
-    escopo: `ESCOPO DESTA SIMULAÇÃO: só OBJEÇÕES E FECHAMENTO. Pule direto pro momento em que o valor
-já foi apresentado — assuma cenário plausível e coerente com o perfil abaixo, mas comece já em cena,
-sem narrar isso fora do personagem. Abra a simulação já levantando uma objeção real e específica
-(preço, medo de golpe, "preciso falar com meu sócio", "vou pensar", medo de bloqueio de conta — ver
-seção 3 da base de conhecimento), coerente com a dificuldade configurada.`,
+    instrucao: `OBJEÇÕES E FECHAMENTO: levante objeções reais e coerentes com a dificuldade configurada,
+baseadas nos padrões documentados na seção 3 da base de conhecimento (preço, medo de golpe, "preciso
+falar com meu sócio", "vou pensar"/"vou sair", medo de bloqueio de conta, ceticismo com mentoria). Uma
+objeção de cada vez — dê ao closer a chance de responder antes de trazer a próxima. Se bem tratadas,
+sinalize disposição de avançar (pergunte forma de pagamento, próximos passos, prazo de onboarding). Se
+mal tratadas, mantenha resistência condizente com a dificuldade, ou encerre educadamente pedindo mais
+tempo pra pensar.`,
+    aberturaEmCena:
+      'Comece a simulação já levantando uma objeção real e específica (preço, medo de golpe, "preciso ' +
+      'falar com meu sócio", "vou pensar", medo de bloqueio de conta — ver seção 3 da base de ' +
+      'conhecimento), coerente com a dificuldade configurada — assuma que o valor já foi apresentado ' +
+      '(cenário plausível e coerente com o perfil do lead, sem narrar isso fora do personagem).',
   },
 };
 
-function construirSystemPromptLead(perfilLead, baseConhecimento, etapaKey) {
-  const etapa = ETAPAS_SIMULACAO[etapaKey] || ETAPAS_SIMULACAO.completo;
+function resolverEtapas(etapasReq) {
+  if (Array.isArray(etapasReq) && etapasReq.length > 0) {
+    const lista = ORDEM_ETAPAS.filter((k) => etapasReq.includes(k));
+    if (lista.length > 0) return lista;
+  }
+  if (typeof etapasReq === 'string' && ORDEM_ETAPAS.includes(etapasReq)) {
+    return [etapasReq];
+  }
+  return [...ORDEM_ETAPAS]; // padrão: exercício completo
+}
+
+function rotuloEtapas(lista) {
+  if (lista.length === ORDEM_ETAPAS.length) return 'Exercício completo';
+  return lista.map((k) => ETAPAS_INFO[k].label).join(' + ');
+}
+
+function construirSystemPromptLead(perfilLead, baseConhecimento, etapasSelecionadas) {
+  const lista = resolverEtapas(etapasSelecionadas);
+  const completo = lista.length === ORDEM_ETAPAS.length;
+
+  const escopo = completo
+    ? null
+    : `ESCOPO DESTA SIMULAÇÃO: só ${rotuloEtapas(lista)}, nessa ordem. Ignore/pule qualquer fase fora
+dessa lista — se vier antes da primeira fase selecionada, assuma que já aconteceu (cenário plausível e
+coerente com o perfil abaixo, sem narrar isso fora do personagem); não avance sozinho pra fases depois
+da última fase selecionada.
+
+${lista.map((k) => ETAPAS_INFO[k].instrucao).join('\n\n')}`;
 
   return `Você simula uma REUNIÃO DE VENDAS COMPLETA de mentoria Native Ads/Taboola, fazendo o papel do LEAD.
 O CLOSER (usuário) está treinando a call. Você é só o lead — nunca fale como vendedor nem avance a
@@ -280,7 +313,7 @@ venda por conta própria.
 
 ${descreverPerfilLead(perfilLead)}
 
-${etapa.escopo ? etapa.escopo + '\n' : ''}
+${escopo ? escopo + '\n' : ''}
 
 REGRA DE PARCIMÔNIA DE INFORMAÇÃO (aplica-se sempre que você estiver em [LEAD] — muito importante):
 - Lead real não entrega contexto de graça. Responda SOMENTE o que foi perguntado, curto e direto
@@ -481,43 +514,36 @@ Dê: (1) pontos fortes do closer, (2) pontos de melhoria específicos com trecho
 
 app.post('/api/roleplay/start', async (req, res) => {
   try {
-    const { perfilLead, etapa } = req.body;
-    const etapaKey = ETAPAS_SIMULACAO[etapa] ? etapa : 'completo';
-    const etapaConfig = ETAPAS_SIMULACAO[etapaKey];
+    const { perfilLead, etapas } = req.body;
+    const lista = resolverEtapas(etapas);
+    const closerComeca = lista[0] === 'rapport_diagnostico';
     const sessionId = randomUUID();
 
-    if (etapaConfig.closerComeca) {
-      // Rapport/diagnóstico e exercício completo: quem fala primeiro é o closer, sem briefing da IA.
+    if (closerComeca) {
+      // Rapport/diagnóstico (isolado ou dentro do exercício completo): closer fala primeiro, sem briefing da IA.
       sessoesRoleplay.set(sessionId, {
         closer: req.colaborador,
         perfilLead: perfilLead || null,
-        etapa: etapaKey,
+        etapas: lista,
         historico: [],
         criadoEm: new Date().toISOString(),
       });
 
-      logUso({ tipo: 'roleplay_start', closer: req.colaborador, sessionId, perfilLead, etapa: etapaKey });
+      logUso({ tipo: 'roleplay_start', closer: req.colaborador, sessionId, perfilLead, etapas: lista });
 
       return res.json({ sessionId, mensagem: null, modo: null, closerComeca: true });
     }
 
     const baseConhecimento = lerBaseConhecimento();
-    const systemPrompt = construirSystemPromptLead(perfilLead, baseConhecimento, etapaKey);
+    const systemPrompt = construirSystemPromptLead(perfilLead, baseConhecimento, lista);
+    const aberturaEmCena = ETAPAS_INFO[lista[0]].aberturaEmCena;
 
     const message = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 400,
       thinking: { type: 'disabled' },
       system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content:
-            'Inicie a simulação já dentro do escopo definido pra essa etapa: assuma um cenário ' +
-            'anterior plausível (coerente com o perfil do lead) e mande a primeira fala do lead já ' +
-            'nesse ponto da call, sem narrar fora do personagem o que "já aconteceu".',
-        },
-      ],
+      messages: [{ role: 'user', content: aberturaEmCena }],
     });
 
     const { modo, texto } = extrairModoEResposta(extrairTexto(message));
@@ -525,12 +551,12 @@ app.post('/api/roleplay/start', async (req, res) => {
     sessoesRoleplay.set(sessionId, {
       closer: req.colaborador,
       perfilLead: perfilLead || null,
-      etapa: etapaKey,
+      etapas: lista,
       historico: [{ role: 'assistant', content: extrairTexto(message) }],
       criadoEm: new Date().toISOString(),
     });
 
-    logUso({ tipo: 'roleplay_start', closer: req.colaborador, sessionId, perfilLead, etapa: etapaKey });
+    logUso({ tipo: 'roleplay_start', closer: req.colaborador, sessionId, perfilLead, etapas: lista });
 
     res.json({ sessionId, mensagem: texto, modo, closerComeca: false });
   } catch (error) {
@@ -555,7 +581,7 @@ app.post('/api/roleplay/message', async (req, res) => {
     sessao.historico.push({ role: 'user', content: mensagem });
 
     const baseConhecimento = lerBaseConhecimento();
-    const systemPrompt = construirSystemPromptLead(sessao.perfilLead, baseConhecimento, sessao.etapa);
+    const systemPrompt = construirSystemPromptLead(sessao.perfilLead, baseConhecimento, sessao.etapas);
 
     const resposta = await anthropic.messages.create({
       model: MODEL,
@@ -600,7 +626,7 @@ app.post('/api/roleplay/feedback', async (req, res) => {
       })
       .join('\n');
 
-    const etapaLabel = ETAPAS_SIMULACAO[sessao.etapa]?.label || 'Exercício completo';
+    const etapaLabel = rotuloEtapas(resolverEtapas(sessao.etapas));
 
     const resposta = await anthropic.messages.create({
       model: MODEL,
