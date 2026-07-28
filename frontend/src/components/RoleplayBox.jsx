@@ -8,7 +8,7 @@ const CAMPOS_PERFIL = [
 ];
 
 const ETAPAS_ATOMICAS = [
-  { chave: 'rapport_diagnostico', titulo: 'Rapport + Diagnóstico', descricao: 'Abertura e extração de informação. Você fala primeiro.' },
+  { chave: 'rapport_diagnostico', titulo: 'Warm-up + Diagnóstico', descricao: 'Abertura e extração de informação. Você fala primeiro.' },
   { chave: 'armap', titulo: 'ARM-AP', descricao: 'Transição diagnóstico → apresentação. O lead já entra em cena, você fecha o pacto de ouvir a proposta.' },
   { chave: 'pacto_preco', titulo: 'Dúvidas + pacto de preço', descricao: 'O lead já entra em cena com uma dúvida técnica antes do pacto pré-preço.' },
   { chave: 'objecoes_fechamento', titulo: 'Objeções e fechamento', descricao: 'O lead já entra em cena levantando uma objeção real.' },
@@ -357,7 +357,7 @@ export default function RoleplayBox({ closer }) {
               <span>
                 <span className="block text-sm font-medium text-gray-900">Exercício completo</span>
                 <span className="block text-xs text-gray-500">
-                  Rapport → diagnóstico → ARM-AP → dúvidas/pacto de preço → objeções e fechamento.
+                  Warm-up → diagnóstico → ARM-AP → dúvidas/pacto de preço → objeções e fechamento.
                   Marca todas as etapas abaixo.
                 </span>
               </span>

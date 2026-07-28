@@ -225,7 +225,7 @@ const ORDEM_ETAPAS = ['rapport_diagnostico', 'armap', 'pacto_preco', 'objecoes_f
 
 const ETAPAS_INFO = {
   rapport_diagnostico: {
-    label: 'Rapport + Diagnóstico',
+    label: 'Warm-up + Diagnóstico',
     instrucao: `RAPPORT + DIAGNÓSTICO: quem fala primeiro é o CLOSER — você nunca inicia a conversa nem
 entrega contexto espontâneo antes de ser perguntado. Dê só um gancho breve e vago da sua situação
 quando perguntado de forma aberta — nunca a história toda de uma vez. Siga a regra de parcimônia de
