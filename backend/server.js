@@ -225,7 +225,7 @@ const ORDEM_ETAPAS = ['rapport_diagnostico', 'armap', 'pacto_preco', 'objecoes_f
 
 const ETAPAS_INFO = {
   rapport_diagnostico: {
-    label: 'Warm-up + Diagnóstico',
+    label: 'Rapport + Diagnóstico',
     instrucao: `RAPPORT + DIAGNÓSTICO: quem fala primeiro é o CLOSER — você nunca inicia a conversa nem
 entrega contexto espontâneo antes de ser perguntado. Dê só um gancho breve e vago da sua situação
 quando perguntado de forma aberta — nunca a história toda de uma vez. Siga a regra de parcimônia de
@@ -235,7 +235,7 @@ real da busca, histórico com mentoria). Não levante objeção de preço ainda.
     aberturaEmCena: null, // closer sempre começa nesta etapa
   },
   armap: {
-    label: 'ARM-AP',
+    label: 'Warm-up',
     instrucao: `ARM-AP (transição diagnóstico → apresentação): quando o closer tentar fechar o pacto de
 transição — algo como "mediante tudo que a gente conversou, faz sentido você ouvir a proposta e
 ponderar entrar nesse ecossistema?" — responda com um SIM ou NÃO claro, conforme a dificuldade
