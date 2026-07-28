@@ -7,6 +7,14 @@ const CAMPOS_PERFIL = [
   { chave: 'dificuldade', titulo: 'Dificuldade de fechamento', esquerda: 'Muito fácil', direita: 'Muito difícil' },
 ];
 
+const ETAPAS = [
+  { chave: 'completo', titulo: 'Exercício completo', descricao: 'Rapport → diagnóstico → ARM-AP → dúvidas/pacto de preço → objeções e fechamento.' },
+  { chave: 'rapport_diagnostico', titulo: 'Rapport + Diagnóstico', descricao: 'Só a abertura e a extração de informação. Você fala primeiro.' },
+  { chave: 'armap', titulo: 'ARM-AP', descricao: 'Transição diagnóstico → apresentação. O lead já entra em cena, você fecha o pacto de ouvir a proposta.' },
+  { chave: 'pacto_preco', titulo: 'Dúvidas + pacto de preço', descricao: 'O lead já entra em cena com uma dúvida técnica antes do pacto pré-preço.' },
+  { chave: 'objecoes_fechamento', titulo: 'Objeções e fechamento', descricao: 'O lead já entra em cena levantando uma objeção real.' },
+];
+
 function corOrb(estado, modoFala) {
   if (estado === 'ouvindo') return 'bg-blue-500';
   if (estado === 'processando') return 'bg-violet-500';
@@ -23,6 +31,7 @@ function textoEstado(estado, modoFala) {
 
 export default function RoleplayBox({ closer }) {
   const [perfilLead, setPerfilLead] = useState({ tecnico: 3, emocional: 3, dificuldade: 3 });
+  const [etapa, setEtapa] = useState('completo');
   const [sessionId, setSessionId] = useState(null);
   const [carregandoForm, setCarregandoForm] = useState(false);
   const [carregandoFeedback, setCarregandoFeedback] = useState(false);
@@ -76,6 +85,8 @@ export default function RoleplayBox({ closer }) {
     }
   }
 
+  const DELAY_SILENCIO_MS = 5000;
+
   function iniciarEscuta() {
     if (!vivoRef.current) return;
 
@@ -90,15 +101,36 @@ export default function RoleplayBox({ closer }) {
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'pt-BR';
-    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
-    let resultadoRecebido = false;
+    let transcricaoFinal = '';
+    let silencioTimer = null;
+
+    function agendarFinalizacaoPorSilencio() {
+      if (silencioTimer) clearTimeout(silencioTimer);
+      silencioTimer = setTimeout(() => {
+        try {
+          recognition.stop();
+        } catch {
+          // já parado
+        }
+      }, DELAY_SILENCIO_MS);
+    }
 
     recognition.onresult = (e) => {
-      resultadoRecebido = true;
-      const texto = e.results[0][0].transcript;
-      processarFalaCloser(texto);
+      let novoFinal = '';
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const trecho = e.results[i][0].transcript;
+        if (e.results[i].isFinal) novoFinal += trecho;
+        else interim += trecho;
+      }
+      if (novoFinal) transcricaoFinal += novoFinal;
+      setLegendaCloser((transcricaoFinal + ' ' + interim).trim());
+      // Qualquer fala nova (final ou parcial) reinicia a janela de 5s de silêncio.
+      agendarFinalizacaoPorSilencio();
     };
 
     recognition.onerror = (e) => {
@@ -107,10 +139,15 @@ export default function RoleplayBox({ closer }) {
         vivoRef.current = false;
         setEstado('desligado');
       }
+      // 'no-speech' e outros erros momentâneos: deixa o onend decidir o que fazer.
     };
 
     recognition.onend = () => {
-      if (!resultadoRecebido && vivoRef.current) {
+      if (silencioTimer) clearTimeout(silencioTimer);
+      const textoCompleto = transcricaoFinal.trim();
+      if (textoCompleto) {
+        processarFalaCloser(textoCompleto);
+      } else if (vivoRef.current) {
         iniciarEscuta();
       }
     };
@@ -179,7 +216,7 @@ export default function RoleplayBox({ closer }) {
       const resp = await apiFetch('/api/roleplay/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ closer, perfilLead }),
+        body: JSON.stringify({ closer, perfilLead, etapa }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.erro || 'Falha ao iniciar simulação.');
@@ -187,7 +224,13 @@ export default function RoleplayBox({ closer }) {
       sessionIdRef.current = data.sessionId;
       setSessionId(data.sessionId);
       vivoRef.current = true;
-      falarResposta(data.mensagem, data.modo);
+
+      if (data.closerComeca) {
+        // Você fala primeiro — nada de briefing da IA, vai direto pra escuta.
+        iniciarEscuta();
+      } else {
+        falarResposta(data.mensagem, data.modo);
+      }
     } catch (err) {
       setErro(err.message);
     } finally {
@@ -280,9 +323,38 @@ export default function RoleplayBox({ closer }) {
         <div>
           <h1 className="text-lg font-semibold text-gray-900">Simular reunião completa</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Configure o perfil do lead. A conversa é falada, ao vivo — você fala, a IA responde
-            falando. Se travar, é só pedir ajuda que ela sai do personagem e ensina.
+            Escolha o que treinar e configure o perfil do lead. Conversa falada, ao vivo — a IA só
+            responde depois de 5s de silêncio seu (pra não te cortar no meio da frase). Se travar, é
+            só pedir ajuda que ela sai do personagem e ensina — ou ela mesma pivota se perceber que
+            você não está extraindo a informação certa.
           </p>
+        </div>
+
+        <div className="w-full text-left">
+          <label className="block text-sm font-medium text-gray-700 mb-2">O que treinar</label>
+          <div className="space-y-2">
+            {ETAPAS.map((op) => (
+              <label
+                key={op.chave}
+                className={`flex items-start gap-2 rounded-lg border px-3 py-2 cursor-pointer ${
+                  etapa === op.chave ? 'border-purple-600 bg-purple-50' : 'border-gray-200'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="etapa"
+                  value={op.chave}
+                  checked={etapa === op.chave}
+                  onChange={() => setEtapa(op.chave)}
+                  className="mt-1 accent-purple-600"
+                />
+                <span>
+                  <span className="block text-sm font-medium text-gray-900">{op.titulo}</span>
+                  <span className="block text-xs text-gray-500">{op.descricao}</span>
+                </span>
+              </label>
+            ))}
+          </div>
         </div>
 
         <div className="w-full space-y-5 text-left">

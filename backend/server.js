@@ -221,12 +221,66 @@ function descreverPerfilLead(perfilLead) {
 - Dificuldade de fechamento: ${dificuldade}`;
 }
 
-function construirSystemPromptLead(perfilLead, baseConhecimento) {
+const ETAPAS_SIMULACAO = {
+  completo: {
+    label: 'Exercício completo',
+    closerComeca: true,
+    escopo: null,
+  },
+  rapport_diagnostico: {
+    label: 'Rapport + Diagnóstico',
+    closerComeca: true,
+    escopo: `ESCOPO DESTA SIMULAÇÃO: só RAPPORT + DIAGNÓSTICO. Ignore apresentação/objeções/fechamento
+— não avance sozinho pra elas. Quando o closer já tiver coletado um diagnóstico razoável (nicho,
+tráfego atual, investimento/ROI, motivo real da busca), sinalize o fim natural dessa etapa com uma
+fala do tipo "acho que é isso, o que você acha que dá pra fazer por mim?" e pare aí — não continue
+puxando apresentação ou preço por conta própria.`,
+  },
+  armap: {
+    label: 'ARM-AP (transição diagnóstico → apresentação)',
+    closerComeca: false,
+    escopo: `ESCOPO DESTA SIMULAÇÃO: só ARM-AP, a transição entre diagnóstico e apresentação comercial.
+Assuma que o diagnóstico já aconteceu — invente mentalmente um cenário plausível e coerente com o
+perfil do lead abaixo (nicho, tráfego atual, investimento/ROI, motivo da busca), mas NUNCA narre esse
+cenário fora do personagem — comece já em cena. O closer vai tentar fechar o pacto de transição: algo
+como "mediante tudo que a gente conversou, faz sentido você ouvir a proposta e ponderar entrar nesse
+ecossistema?". Responda com um SIM ou NÃO claro, conforme a dificuldade configurada: dificuldade
+baixa topa com facilidade; dificuldade alta hesita e evita compromisso ("não sei, acho que não
+preciso disso agora", "não vou confirmar nada, não fecho nada em call"). Não entre em detalhe de
+preço nem objeção de fechamento — o foco é só esse micro-pacto de transição.`,
+  },
+  pacto_preco: {
+    label: 'Dúvidas + pacto de preço',
+    closerComeca: false,
+    escopo: `ESCOPO DESTA SIMULAÇÃO: só DÚVIDAS + PACTO DE PREÇO. Pule rapport, diagnóstico, ARM-AP e
+apresentação — assuma que já aconteceram (cenário plausível e coerente com o perfil abaixo), mas
+comece já em cena, sem narrar isso fora do personagem. O closer vai tirar dúvida técnica sua e tentar
+um pacto antes de revelar o valor (algo como "se eu tiver uma solução que cabe no seu investimento,
+faz sentido pra você?"). Abra a simulação já com uma dúvida técnica genuína e específica, coerente
+com seu nível técnico configurado. Só concorde com o pacto se a resposta do closer fizer sentido de
+verdade — não ceda por educação.`,
+  },
+  objecoes_fechamento: {
+    label: 'Objeções e fechamento',
+    closerComeca: false,
+    escopo: `ESCOPO DESTA SIMULAÇÃO: só OBJEÇÕES E FECHAMENTO. Pule direto pro momento em que o valor
+já foi apresentado — assuma cenário plausível e coerente com o perfil abaixo, mas comece já em cena,
+sem narrar isso fora do personagem. Abra a simulação já levantando uma objeção real e específica
+(preço, medo de golpe, "preciso falar com meu sócio", "vou pensar", medo de bloqueio de conta — ver
+seção 3 da base de conhecimento), coerente com a dificuldade configurada.`,
+  },
+};
+
+function construirSystemPromptLead(perfilLead, baseConhecimento, etapaKey) {
+  const etapa = ETAPAS_SIMULACAO[etapaKey] || ETAPAS_SIMULACAO.completo;
+
   return `Você simula uma REUNIÃO DE VENDAS COMPLETA de mentoria Native Ads/Taboola, fazendo o papel do LEAD.
-O CLOSER (usuário) está treinando a call do início ao fim. Você é só o lead — nunca fale como vendedor
-nem avance a venda por conta própria.
+O CLOSER (usuário) está treinando a call. Você é só o lead — nunca fale como vendedor nem avance a
+venda por conta própria.
 
 ${descreverPerfilLead(perfilLead)}
+
+${etapa.escopo ? etapa.escopo + '\n' : ''}
 
 REGRA DE PARCIMÔNIA DE INFORMAÇÃO (aplica-se sempre que você estiver em [LEAD] — muito importante):
 - Lead real não entrega contexto de graça. Responda SOMENTE o que foi perguntado, curto e direto
@@ -244,23 +298,40 @@ REGRA DE PARCIMÔNIA DE INFORMAÇÃO (aplica-se sempre que você estiver em [LEA
   diagnóstico com perguntas boas (ver seção 2 da base de conhecimento: onde roda tráfego hoje,
   investimento e ROI atual, nicho, estrutura de equipe, motivo real da busca, histórico com mentoria).
 
-FASES DA CALL (você deve seguir a call se movendo por essas fases de forma natural, sem anunciar
-que "mudou de fase" — apenas se comporte como um lead real nesse momento da conversa):
-1. ABERTURA/DIAGNÓSTICO: no início, dê só um gancho breve e vago da sua situação (ex: "trabalho com
-   [nicho], mas o resultado não está legal ultimamente") — não conte a história toda de uma vez.
-   Responda às perguntas de descoberta do closer seguindo a regra de parcimônia acima. Não levante
-   objeção de preço ainda — essa fase é sobre o closer te entender, e ele só te entende se perguntar
-   bem.
-2. APRESENTAÇÃO: quando o closer explicar a proposta/mentoria, reaja de acordo com seu perfil
-   técnico e emocional — faça perguntas se for técnico, comente se algo te preocupa se for emotivo.
-3. OBJEÇÕES: levante objeções reais e coerentes com o seu nível de dificuldade, baseadas nos
-   padrões documentados na seção "Objeções reais e como foram respondidas" da base de conhecimento
-   (preço, medo de golpe, medo de bloqueio de conta, falta de tempo/atenção, ceticismo com
-   mentoria). Uma objeção de cada vez — dê ao closer a chance de responder antes de trazer a
-   próxima.
-4. FECHAMENTO: se as objeções forem bem tratadas, sinalize disposição de avançar (pergunte forma
-   de pagamento, próximos passos, prazo de onboarding). Se forem mal tratadas, mantenha resistência
-   condizente com sua dificuldade, ou encerre educadamente pedindo mais tempo pra pensar.
+FASES DA CALL, nesta ordem exata (mova entre elas de forma natural, sem anunciar "mudei de fase" —
+apenas se comporte como um lead real nesse momento da conversa). Se a etapa configurada acima for
+específica (não "completo"), ignore as fases fora do escopo e só encene a fase relevante:
+1. RAPPORT: quem fala PRIMEIRO é sempre o CLOSER — você NUNCA inicia a conversa nem entrega contexto
+   espontâneo antes de ser perguntado. Se você for gerar a primeiríssima fala da simulação e ninguém
+   ainda te perguntou nada, sua única fala possível é uma saudação mínima e neutra (ex: "Oi, tudo
+   bem? Pode falar", "Oi! Consegue me ouvir bem?") — nunca se apresente nem conte do seu negócio
+   sozinho. Deixe o closer puxar o assunto.
+2. DIAGNÓSTICO: dê só um gancho breve e vago da sua situação quando perguntado de forma aberta (ex:
+   "trabalho com [nicho], mas o resultado não está legal ultimamente") — nunca a história toda de
+   uma vez. Siga a regra de parcimônia de informação acima à risca — o closer precisa GANHAR cada
+   dado com pergunta boa (ver seção 2 da base de conhecimento: onde roda tráfego hoje, investimento
+   e ROI atual, nicho, estrutura de equipe, motivo real da busca, histórico com mentoria). Não
+   levante objeção de preço ainda.
+3. ARM-AP (transição diagnóstico → apresentação): quando o closer tentar fechar o pacto de transição
+   — algo como "mediante tudo que a gente conversou, faz sentido você ouvir a proposta e ponderar
+   entrar nesse ecossistema?" — responda com um SIM ou NÃO claro, conforme a dificuldade configurada:
+   fácil topa com naturalidade; difícil hesita e evita compromisso ("não sei, acho que não preciso
+   agora", "não vou confirmar nada, não fecho em call"). Sem esse pacto fechado, o closer não deveria
+   avançar — se ele tentar pular direto pra preço sem fazer esse pacto, reaja com estranheza/
+   resistência, como um lead real reagiria a alguém queimando etapa.
+   (Não existe fase de apresentação com slides nessa simulação — depois do ARM-AP vai direto pra
+   dúvidas/pacto de preço.)
+4. DÚVIDAS + PACTO DE PREÇO: reaja com uma dúvida técnica genuína, coerente com seu nível técnico,
+   antes de aceitar qualquer pacto pré-preço que o closer tentar fazer (ex: "se eu tiver uma solução
+   que cabe no seu investimento, faz sentido pra você?"). Só concorde se a resposta do closer fizer
+   sentido de verdade.
+5. OBJEÇÕES E FECHAMENTO: levante objeções reais e coerentes com a dificuldade configurada, baseadas
+   nos padrões documentados na seção 3 da base de conhecimento (preço, medo de golpe, "preciso falar
+   com meu sócio", "vou pensar"/"vou sair", medo de bloqueio de conta, ceticismo com mentoria). Uma
+   objeção de cada vez — dê ao closer a chance de responder antes de trazer a próxima. Se bem
+   tratadas, sinalize disposição de avançar (pergunte forma de pagamento, próximos passos, prazo de
+   onboarding). Se mal tratadas, mantenha resistência condizente com a dificuldade, ou encerre
+   educadamente pedindo mais tempo pra pensar.
 
 MODO COACH (saída de personagem — regra mais importante):
 Se o CLOSER pedir ajuda diretamente — frases como "não sei responder isso", "me ajuda aqui", "como
@@ -395,18 +466,43 @@ de forma razoável com base em práticas de vendas consultivas (ex: abertura/rap
 situação/objeção real, transição pra reformular a objeção, resolução/argumento de valor, fechamento com
 próximo passo claro) — deixando explícito que essa estrutura deve ser validada com o Maurício.
 
-Trechos marcados como "COACH" no histórico são momentos em que o closer pediu ajuda e saiu da
-simulação — considere isso na avaliação (não é falha grave pedir ajuda, mas pontos onde isso
-aconteceu merecem menção como área de estudo).
+Trechos marcados como "COACH" no histórico são momentos em que o closer pediu ajuda (ou o sistema
+pivotou proativamente por perceber o closer travado) e saiu da simulação — considere isso na
+avaliação (não é falha grave pedir ajuda, mas pontos onde isso aconteceu merecem menção como área de
+estudo).
+
+A mensagem do usuário informa qual ETAPA foi treinada nessa sessão (pode ser a call completa ou só um
+recorte — ex: só rapport+diagnóstico, só ARM-AP, só dúvidas+pacto de preço, só objeções/fechamento).
+Avalie SOMENTE o que é pertinente pra essa etapa — não penalize o closer por não ter chegado a fases
+fora do escopo treinado.
 
 Dê: (1) pontos fortes do closer, (2) pontos de melhoria específicos com trecho citado da conversa,
 (3) uma sugestão de frase melhor pra pelo menos uma resposta fraca, (4) nota geral de 0 a 10.`;
 
 app.post('/api/roleplay/start', async (req, res) => {
   try {
-    const { perfilLead } = req.body;
+    const { perfilLead, etapa } = req.body;
+    const etapaKey = ETAPAS_SIMULACAO[etapa] ? etapa : 'completo';
+    const etapaConfig = ETAPAS_SIMULACAO[etapaKey];
+    const sessionId = randomUUID();
+
+    if (etapaConfig.closerComeca) {
+      // Rapport/diagnóstico e exercício completo: quem fala primeiro é o closer, sem briefing da IA.
+      sessoesRoleplay.set(sessionId, {
+        closer: req.colaborador,
+        perfilLead: perfilLead || null,
+        etapa: etapaKey,
+        historico: [],
+        criadoEm: new Date().toISOString(),
+      });
+
+      logUso({ tipo: 'roleplay_start', closer: req.colaborador, sessionId, perfilLead, etapa: etapaKey });
+
+      return res.json({ sessionId, mensagem: null, modo: null, closerComeca: true });
+    }
+
     const baseConhecimento = lerBaseConhecimento();
-    const systemPrompt = construirSystemPromptLead(perfilLead, baseConhecimento);
+    const systemPrompt = construirSystemPromptLead(perfilLead, baseConhecimento, etapaKey);
 
     const message = await anthropic.messages.create({
       model: MODEL,
@@ -417,26 +513,26 @@ app.post('/api/roleplay/start', async (req, res) => {
         {
           role: 'user',
           content:
-            'Inicie a simulação: mande a primeira mensagem do lead abrindo a call — se apresentando ' +
-            'ou dando contexto da sua operação, de acordo com o seu perfil. Ainda não é hora de objeção ' +
-            'de preço, é a fase de abertura/diagnóstico.',
+            'Inicie a simulação já dentro do escopo definido pra essa etapa: assuma um cenário ' +
+            'anterior plausível (coerente com o perfil do lead) e mande a primeira fala do lead já ' +
+            'nesse ponto da call, sem narrar fora do personagem o que "já aconteceu".',
         },
       ],
     });
 
     const { modo, texto } = extrairModoEResposta(extrairTexto(message));
-    const sessionId = randomUUID();
 
     sessoesRoleplay.set(sessionId, {
       closer: req.colaborador,
       perfilLead: perfilLead || null,
+      etapa: etapaKey,
       historico: [{ role: 'assistant', content: extrairTexto(message) }],
       criadoEm: new Date().toISOString(),
     });
 
-    logUso({ tipo: 'roleplay_start', closer: req.colaborador, sessionId, perfilLead });
+    logUso({ tipo: 'roleplay_start', closer: req.colaborador, sessionId, perfilLead, etapa: etapaKey });
 
-    res.json({ sessionId, mensagem: texto, modo });
+    res.json({ sessionId, mensagem: texto, modo, closerComeca: false });
   } catch (error) {
     console.error('Erro ao iniciar roleplay:', error.message);
     res.status(500).json({ erro: 'Falha ao iniciar simulação: ' + error.message });
@@ -459,7 +555,7 @@ app.post('/api/roleplay/message', async (req, res) => {
     sessao.historico.push({ role: 'user', content: mensagem });
 
     const baseConhecimento = lerBaseConhecimento();
-    const systemPrompt = construirSystemPromptLead(sessao.perfilLead, baseConhecimento);
+    const systemPrompt = construirSystemPromptLead(sessao.perfilLead, baseConhecimento, sessao.etapa);
 
     const resposta = await anthropic.messages.create({
       model: MODEL,
@@ -504,12 +600,19 @@ app.post('/api/roleplay/feedback', async (req, res) => {
       })
       .join('\n');
 
+    const etapaLabel = ETAPAS_SIMULACAO[sessao.etapa]?.label || 'Exercício completo';
+
     const resposta = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 2000,
       thinking: { type: 'disabled' },
       system: SYSTEM_PROMPT_FEEDBACK,
-      messages: [{ role: 'user', content: `Transcrição da simulação:\n\n${transcricao}` }],
+      messages: [
+        {
+          role: 'user',
+          content: `Etapa treinada nesta simulação: ${etapaLabel}\n\nTranscrição da simulação:\n\n${transcricao}`,
+        },
+      ],
     });
 
     const feedback = extrairTexto(resposta);
