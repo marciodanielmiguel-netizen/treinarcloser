@@ -9,10 +9,14 @@
 ## 1. Quem é o Maurício Brollo (autoridade / posicionamento)
 
 - Fundador da única agência Taboola **oficial** na América Latina.
-- 8 anos de mercado, mais de 50 milhões de reais/dólares gerenciados em Taboola.
+- 8-10 anos de mercado; números de autoridade citados variam por call (usar como referência de
+  faixa, não valor fixo): mais de 50 milhões geridos em Taboola / já geriu 300 milhões em Native
+  Ads no total, mais de 5.000 alunos, mais de 100 alunos formados milionários.
 - Histórico em Native Ads, lançamentos digitais, telemedicina e marcas próprias (ex: parcerias
   citadas com Felipe da FEG e Wfit).
-- Parcerias de plataforma citadas como prova social: Cart Panda, Headrack.
+- Parcerias de plataforma citadas como prova social: Taboola (oficial), MGID, Cart Panda, Kawai,
+  RedTrack/Headtrack.
+- Presença em podcasts do nicho (ex: Pandacast) e posicionamento como "mentor de mentores".
 - Dez anos de mercado sem histórico negativo — ponto usado pra neutralizar objeção de
   "golpe"/"guru" logo no início da conversa.
 - Diferencial central do discurso: agência é remunerada pela própria Taboola pelo volume/
@@ -82,6 +86,35 @@ Resposta usada: oferece documentar por escrito todos os compromissos e promessas
 de fechamento, define quem é o gestor responsável pelo onboarding (nome próprio, não "a equipe"),
 e detalha o cronograma de próximas 24-72h pra reduzir ansiedade pós-compra.
 
+### Objeção: "Não tenho caixa agora / vou descapitalizar minha operação se pagar a mentoria toda"
+Padrão observado (recorrente em leads iniciantes ou operação recém-capitalizada): nunca insiste na
+mentoria completa se o lead deixa claro que não tem caixa de giro pro próprio tráfego. Caminhos usados:
+1. **Downsell pra oferta de entrada**: existe um produto técnico mais barato ("Turbo Taboola", ~R$1.000
+   a R$1.600) focado só na parte técnica/captação, sem mentoria individual nem conta gerenciada — serve
+   pra começar a aprender sem comprometer o orçamento de mídia. Não é vendido como substituto da
+   mentoria, e sim como porta de entrada — o relacionamento continua aberto pra upgrade depois.
+2. **Reduzir o valor de entrada** mantendo capital de giro do cliente, condicionando o restante do
+   pagamento a uma meta de faturamento atingida (ver modelo "checkpoint" na seção 5).
+3. Quando nem isso cabe, aceita-se o "não" educadamente, sem pressão — reforça-se prudência financeira
+   do lead como decisão correta, e mantém-se contato pra reavaliação futura (ex: "fazer raio-x da
+   operação no fim do mês e reavaliar caixa disponível").
+
+### Objeção: "O que faz o aluno não dar certo na mentoria?"
+Resposta usada: sucesso depende do aluno colocar energia real na operação e seguir rigorosamente as
+recomendações técnicas — os casos de insucesso citados internamente são ligados a falta de dedicação
+ou desvio do método ensinado, não a falha da estrutura oferecida.
+
+### Objeção: "Por que o perfil/marca de vocês tem alcance pequeno, sendo o Maurício tão conhecido?"
+Resposta usada: é estratégia deliberada — o perfil filtra e atrai público já qualificado e experiente
+em marketing digital, em vez de atrair iniciantes sem bagagem, o que mantém a qualidade dos leads que
+chegam até a call.
+
+### Sinal de confiança contratual
+Contratos oferecem 7 dias corridos de garantia (direito de arrependimento previsto em lei), o que é
+usado ativamente na call como resposta a ceticismo — não é escondido, é mostrado como prova de
+seriedade. Contratos de mentoria também trazem prazo fechado (ex: 6 meses), justificado abertamente
+como mecanismo pra incentivar execução rápida do aluno e evitar procrastinação — não como pegadinha.
+
 ---
 
 ## 4. Estratégia técnica Native Ads / Taboola
@@ -97,6 +130,16 @@ e detalha o cronograma de próximas 24-72h pra reduzir ansiedade pós-compra.
 - Recomenda-se uso intensivo de **blacklists** (bloquear os portais ruins) em vez de whitelist
   restritiva, pra garantir participação em mais leilões, principalmente em portais regionais menos
   disputados.
+
+### Contas farmadas vs contas gerenciadas
+Distinção técnica usada com frequência pra justificar preço/porte da oferta:
+- **Contas farmadas**: usadas na fase de validação/operações menores. São substituídas rapidamente
+  quando bloqueadas e performam de forma consistente pra teste inicial.
+- **Contas gerenciadas em rede**: liberadas geralmente a partir de operações de R$ 20.000+, suportam
+  orçamentos mais altos, têm maior durabilidade e a agência gerencia proativamente o risco de bloqueio
+  (troca rápida em caso de banimento). É o modelo defendido pra quem já quer escalar, não só validar.
+- Diferencial de vendido como redução de risco: operações sem essa estrutura (rodando por conta própria,
+  sem gerência de risco) relatadas perdendo contas em 1-2 semanas por falta de direcionamento técnico.
 
 ### Compliance / regras pra evitar bloqueio
 - Excluir logos de portais famosos dos criativos.
@@ -125,6 +168,14 @@ Mercados citados como oportunidade, por menor concorrência/CPA mais barato:
 - ROI saudável de referência: acima de 2.0 (abaixo de ~1.1-1.3 é tratado como operação insustentável).
 - Taxa de entrega (delivery) em COD na Itália: mercado considera abaixo de 50% ruim; com bom call
   center e branding (embalagem personalizada, custo ~US$0,70-0,80) é possível chegar a 65%+.
+- Redução de CPA prometida com a estrutura da agência: em até 15 dias.
+- Prazo de implementação/onboarding técnico: 3 dias com a agência (vs. 1 semana a 10 dias que o lead
+  costuma estimar fazendo sozinho) — usado como argumento de velocidade/eficiência.
+
+### Ferramenta de rastreamento
+RedTrack é a ferramenta recomendada pra rastreamento e precisão de dados de performance (citada como
+superior a alternativas do mercado). A agência costuma oferecer 1 mês grátis de RedTrack como parte do
+onboarding, além de apoio de infraestrutura pra configuração inicial.
 
 ### Modelo de negócio recomendado além de afiliado puro
 - Migrar de puro afiliado pra **marca própria / white label**: validar oferta com white label
@@ -155,9 +206,21 @@ Componentes citados nas duas calls (varia um pouco por caso, mas o padrão é es
 ### Formato de fechamento
 - Preço apresentado como valor único (ex: 10 mil, 20 mil), com flexibilização via entrada +
   saldo condicionado a meta, ou parcelamento.
-- Pagamento aceito via PIX, cartão, ou cripto (USDT/USDC) dependendo do caso.
+- Pagamento aceito via PIX, cartão, Payoneer/Pioneer (em euros, pra operação internacional), ou
+  cripto (USDT/USDC) dependendo do caso.
 - Onboarding com prazo curto prometido (ex: até 3 dias pra operacionalizar conta).
 - Sempre fecha com próximo passo agendado (call de onboarding, envio de comprovante e dados).
+- **Modelo "checkpoint" de pagamento**: parte do valor pago no fechamento (ex: metade ou ticket de
+  entrada) + o restante condicionado a atingir uma meta de faturamento/lucro pro próprio aluno (ex:
+  "paga o resto quando bater 20-30 mil faturado"). Reduz a percepção de risco do lead porque alinha
+  o pagamento final ao resultado, não só ao tempo decorrido.
+- **Produto de entrada mais barato** ("Turbo Taboola", ~R$1.000-1.600): curso técnico sem
+  acompanhamento individual nem conta gerenciada, oferecido a quem não tem caixa pra mentoria completa
+  — não é apresentado como concorrente da mentoria, e sim como primeiro passo dentro do mesmo
+  ecossistema, mantendo o relacionamento aberto pra upgrade.
+- Contrato formal (nome fantasia usado: MB Social Produções) com CPF/dados do aluno, assinatura
+  digital, cláusula de garantia de 7 dias corridos e prazo de vigência (ex: 6 meses), oferecido
+  proativamente a quem pede segurança contratual antes de pagar.
 
 ---
 
